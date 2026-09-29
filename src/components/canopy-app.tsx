@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { GROK_PROVIDERS, signIn } from "@/lib/auth/client";
+import { enterFreeMap } from "@/lib/auth/guest.server";
 import { UserButton } from "@/lib/auth/gates";
 import {
   LEVELS,
@@ -44,6 +45,20 @@ export function Landing() {
               Continue with {p.label}
             </button>
           ))}
+          <button
+            type="button"
+            onClick={() => {
+              void enterFreeMap().then(() => {
+                window.location.assign("/");
+              });
+            }}
+            className="rounded-md bg-leaf px-4 py-3 text-sm font-medium text-leaf-ink"
+          >
+            Use the free map
+          </button>
+          <p className="text-sm text-mute">
+            This browser keeps one free map. Download YAML so you do not lose it. Sign-in comes later.
+          </p>
         </div>
       </div>
     </main>
@@ -64,7 +79,7 @@ function PlanCard({ title, price, points }: { title: string; price: string; poin
   );
 }
 
-export function CanopyApp() {
+export function CanopyApp({ guest = false }: { guest?: boolean }) {
   const [snap, setSnap] = useState<CanopySnapshot | null>(null);
   const [mapId, setMapId] = useState<string>("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -167,7 +182,16 @@ export function CanopyApp() {
             {snap.plan === "pro" ? "Pro" : "Free"} · {nodes.length}/{snap.nodeCap}
           </button>
         )}
-        <UserButton />
+        {guest ? (
+          <>
+            <p className="text-sm text-mute">Guest · this browser</p>
+            <button type="button" onClick={download} className="rounded-md border border-line px-3 py-2 text-sm">
+              Download YAML
+            </button>
+          </>
+        ) : (
+          <UserButton />
+        )}
       </header>
 
       {plansOpen && snap && (

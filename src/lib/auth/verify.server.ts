@@ -1,5 +1,6 @@
 import { getRequest } from "@tanstack/react-start/server";
 import { gateIdentityEnabled } from "./gate-identity.server";
+import { readGuestId } from "./guest.server";
 import { auth, authConfigured } from "./server";
 
 /**
@@ -82,6 +83,10 @@ export async function getSessionUser(
  * - Auth disabled + no database -> the shared dev user id.
  */
 export async function requireUserId(bearerToken?: string): Promise<string> {
+  const user = await getSessionUser(bearerToken);
+  if (user) return user.id;
+  const guestId = readGuestId();
+  if (guestId) return guestId;
   if (!authConfigured && !gateIdentityEnabled()) {
     if (databaseConfigured) {
       throw new Error(
@@ -91,7 +96,5 @@ export async function requireUserId(bearerToken?: string): Promise<string> {
     }
     return DEV_USER_ID;
   }
-  const user = await getSessionUser(bearerToken);
-  if (!user) throw new UnauthorizedError();
-  return user.id;
+  throw new UnauthorizedError();
 }
