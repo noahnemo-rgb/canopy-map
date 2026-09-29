@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { SignInGate } from "@/lib/auth/gates";
-import { guestCookiePresent } from "@/lib/auth/guest.server";
+import { guestCookiePresent } from "@/lib/auth/guest-fns";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
 import { CanopyApp, Landing } from "@/components/canopy-app";
 

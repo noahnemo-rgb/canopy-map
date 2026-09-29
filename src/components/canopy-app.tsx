@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { GROK_PROVIDERS, signIn } from "@/lib/auth/client";
-import { enterFreeMap } from "@/lib/auth/guest.server";
+import { enterFreeMap } from "@/lib/auth/guest-fns";
 import { UserButton } from "@/lib/auth/gates";
 import {
   LEVELS,

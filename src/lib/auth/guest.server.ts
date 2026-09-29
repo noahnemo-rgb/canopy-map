@@ -1,4 +1,3 @@
-import { createServerFn } from "@tanstack/react-start";
 import { getCookie, getRequest, setCookie } from "@tanstack/react-start/server";
 import { GUEST_COOKIE, isGuestId, newGuestId } from "./guest";
 
@@ -15,18 +14,12 @@ export function readGuestId(): string | null {
   return null;
 }
 
-export const guestCookiePresent = createServerFn({ method: "GET" }).handler(async () => {
-  return { guest: readGuestId() !== null };
-});
-
-export const enterFreeMap = createServerFn({ method: "POST" }).handler(async () => {
-  if (!readGuestId()) {
-    setCookie(GUEST_COOKIE, newGuestId(), {
-      httpOnly: true,
-      secure: true,
-      sameSite: "lax",
-      path: "/",
-    });
-  }
-  return { ok: true as const };
-});
+export function mintGuestCookie(): void {
+  if (readGuestId()) return;
+  setCookie(GUEST_COOKIE, newGuestId(), {
+    httpOnly: true,
+    secure: true,
+    sameSite: "lax",
+    path: "/",
+  });
+}
