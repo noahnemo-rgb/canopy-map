@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { ForceMap } from "@/components/force-map";
 import { GROK_PROVIDERS, signIn } from "@/lib/auth/client";
 import { enterFreeMap } from "@/lib/auth/guest-fns";
 import { UserButton } from "@/lib/auth/gates";
@@ -12,7 +13,6 @@ import {
   type Level,
   type Maturity,
   dumpYaml,
-  layoutTree,
 } from "@/lib/canopy";
 import { addGap, addNode, deleteNode, getCanopy, importYaml, removeGap, requestPro, saveNode, scanNode } from "@/lib/canopy-fns";
 
@@ -94,7 +94,6 @@ export function CanopyApp({ guest = false }: { guest?: boolean }) {
   const [parentId, setParentId] = useState("");
   const [gapText, setGapText] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
-  const scroller = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     getCanopy()
@@ -106,18 +105,8 @@ export function CanopyApp({ guest = false }: { guest?: boolean }) {
   }, []);
 
   const nodes = useMemo(() => (snap?.nodes ?? []).filter((n) => n.mapId === mapId), [snap, mapId]);
-  const layout = useMemo(() => layoutTree(nodes), [nodes]);
   const selected = nodes.find((n) => n.id === selectedId) ?? null;
   const map = snap?.maps.find((m) => m.id === mapId) ?? null;
-
-  useEffect(() => {
-    const el = scroller.current;
-    const root = nodes.find((n) => !n.parentId);
-    const p = root ? layout.pos.get(root.id) : undefined;
-    if (!el || !p) return;
-    el.scrollLeft = Math.max(0, p.x - el.clientWidth / 2);
-    el.scrollTop = 0;
-  }, [mapId, nodes.length]);
 
   async function run(fn: () => Promise<CanopySnapshot | { snapshot: CanopySnapshot; leafId: string }>) {
     setBusy(true);
@@ -269,7 +258,7 @@ export function CanopyApp({ guest = false }: { guest?: boolean }) {
           <div className="flex flex-wrap items-end justify-between gap-2">
             <div>
               <h2 className="font-display text-2xl">{map?.name ?? "Map"}</h2>
-              <p className="text-xs text-mute">Workspace, area, project, repo — all on this drawing.</p>
+              <p className="text-xs text-mute">Drag a node. Scroll to zoom. Double-click a node for a closer look. Double-click empty space for the overview.</p>
             </div>
             <div className="flex flex-wrap gap-2 text-[11px] text-mute">
               {MATURITY.map((m) => (
@@ -281,40 +270,7 @@ export function CanopyApp({ guest = false }: { guest?: boolean }) {
             </div>
           </div>
 
-          <div ref={scroller} className="relative max-h-[70vh] overflow-auto rounded-xl border border-line bg-[#10150e]">
-            <svg width={layout.width} height={layout.height} role="img" aria-label="Your project map" className="block">
-              {nodes.map((n) => {
-                if (!n.parentId) return null;
-                const a = layout.pos.get(n.parentId);
-                const b = layout.pos.get(n.id);
-                if (!a || !b) return null;
-                const mid = (a.y + b.y) / 2;
-                return (
-                  <path key={n.id + "-link"} d={`M${a.x},${a.y + a.r} C${a.x},${mid} ${b.x},${mid} ${b.x},${b.y - b.r}`} fill="none" stroke="#3d4a34" strokeWidth={1.6} />
-                );
-              })}
-              {nodes.map((n) => {
-                const p = layout.pos.get(n.id);
-                if (!p) return null;
-                const gapN = n.gaps.length + n.scanFlags.filter((f) => f !== "quiet on GitHub").length;
-                const on = selectedId === n.id;
-                return (
-                  <g key={n.id} transform={`translate(${p.x},${p.y})`} className="cursor-pointer" onClick={() => setSelectedId(n.id)}>
-                    <circle r={p.r + 4} fill="none" stroke={on ? "#d6e36a" : "#2c3826"} strokeWidth={on ? 2 : 1} />
-                    <circle r={p.r} fill={MATURITY_COLOR[n.maturity]} />
-                    {gapN > 0 && (
-                      <text y={-(p.r + 8)} textAnchor="middle" fill="#e39a4a" fontSize={11} fontFamily="Outfit, sans-serif">
-                        {n.gaps.length ? `${n.gaps.length} gap${n.gaps.length === 1 ? "" : "s"}` : `${gapN} flag${gapN === 1 ? "" : "s"}`}
-                      </text>
-                    )}
-                    <text y={p.r + 16} textAnchor="middle" fill="#f4f1e6" fontSize={13} fontFamily="Fraunces, serif">
-                      {n.name.length > 28 ? n.name.slice(0, 26) + "…" : n.name}
-                    </text>
-                  </g>
-                );
-              })}
-            </svg>
-          </div>
+          <ForceMap nodes={nodes} selectedId={selectedId} onSelect={setSelectedId} />
 
           {selected && (
             <NodeCard
