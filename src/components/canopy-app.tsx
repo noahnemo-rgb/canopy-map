@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { ForceMap } from "@/components/force-map";
+import { MapAsk } from "@/components/map-ask";
 import { GROK_PROVIDERS, signIn } from "@/lib/auth/client";
 import { enterFreeMap } from "@/lib/auth/guest-fns";
 import { UserButton } from "@/lib/auth/gates";
@@ -271,6 +272,8 @@ export function CanopyApp({ guest = false }: { guest?: boolean }) {
           </div>
 
           <ForceMap nodes={nodes} selectedId={selectedId} onSelect={setSelectedId} />
+
+          <MapAsk nodes={nodes} />
 
           {selected && (
             <NodeCard
