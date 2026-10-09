@@ -11,6 +11,8 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as ApiAiIndexRouteImport } from './routes/api/ai/index'
+import { Route as ApiAiStatusRouteImport } from './routes/api/ai/status'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 
 const IndexRoute = IndexRouteImport.update({
@@ -23,6 +25,16 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAiIndexRoute = ApiAiIndexRouteImport.update({
+  id: '/api/ai/',
+  path: '/api/ai/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAiStatusRoute = ApiAiStatusRouteImport.update({
+  id: '/api/ai/status',
+  path: '/api/ai/status',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
@@ -32,31 +44,40 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/api/ai/status': typeof ApiAiStatusRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/ai/': typeof ApiAiIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/api/ai/status': typeof ApiAiStatusRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/ai': typeof ApiAiIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/api/ai/status': typeof ApiAiStatusRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/ai/': typeof ApiAiIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/api/auth/$'
+  fullPaths: '/' | '/login' | '/api/ai/status' | '/api/auth/$' | '/api/ai/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/api/auth/$'
-  id: '__root__' | '/' | '/login' | '/api/auth/$'
+  to: '/' | '/login' | '/api/ai/status' | '/api/auth/$' | '/api/ai'
+  id:
+    '__root__' | '/' | '/login' | '/api/ai/status' | '/api/auth/$' | '/api/ai/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   LoginRoute: typeof LoginRoute
+  ApiAiStatusRoute: typeof ApiAiStatusRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
+  ApiAiIndexRoute: typeof ApiAiIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -75,6 +96,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/ai/': {
+      id: '/api/ai/'
+      path: '/api/ai'
+      fullPath: '/api/ai/'
+      preLoaderRoute: typeof ApiAiIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/ai/status': {
+      id: '/api/ai/status'
+      path: '/api/ai/status'
+      fullPath: '/api/ai/status'
+      preLoaderRoute: typeof ApiAiStatusRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/auth/$': {
       id: '/api/auth/$'
       path: '/api/auth/$'
@@ -88,7 +123,9 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   LoginRoute: LoginRoute,
+  ApiAiStatusRoute: ApiAiStatusRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
+  ApiAiIndexRoute: ApiAiIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
