@@ -11,7 +11,7 @@ Free: 1 map, 20 nodes. Pro is listed at $9/month and is not charged in this buil
 
 This repo is the Canopy app only. It does not contain the ONE house mapper.
 
-Ask about the open map from the page. Puter runs first. An OpenRouter key saved in that browser tries Space Bunny Alpha, then gpt-4o-mini, through [ai-buffer](https://github.com/noahnemo-rgb/ai-buffer-template) pinned at `d0c7cbc`. The key stays in the browser.
+Ask about the open map from the page. Puter runs in the browser. OpenRouter, Space Bunny Alpha, Vercel Gateway, Gemini API, LLMAPI, and NVIDIA NIM go through [ai-buffer](https://github.com/noahnemo-rgb/ai-buffer-template) `v0.4.0` (`b62ba505`). Provider keys stay in the server environment.
 
 ## Run
 

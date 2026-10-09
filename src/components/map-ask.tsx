@@ -1,8 +1,16 @@
-import { useEffect, useState, type FormEvent } from "react";
-import { CANOPY_PROMPT, createCanopyRouter, mapNotes } from "@/lib/canopy-ai.js";
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import {
+  createLocalStorageStore,
+  createProviderSelectionStore,
+  defaultModelFor,
+  loadDashboard,
+  type AiProviderId,
+  type DashboardRow,
+  type ProviderSelectionStore,
+} from "ai-buffer";
+import { AiBufferDashboard } from "@/components/ai-buffer-dashboard";
+import { askCanopy, CANOPY_PROMPT, forgetBrowserProviderKeys, loadCanopyProbe, mapNotes } from "@/lib/canopy-ai.js";
 import type { CanopyNode } from "@/lib/canopy";
-
-const KEY_NAME = "canopy_openrouter_key";
 
 function loadPuter() {
   return new Promise((resolve, reject) => {
@@ -31,22 +39,58 @@ function loadPuter() {
   });
 }
 
+function readPuterSignedIn() {
+  const puter = (window as Window & { puter?: { auth?: { isSignedIn?: () => boolean } } }).puter;
+  try {
+    return Boolean(puter?.auth?.isSignedIn?.());
+  } catch {
+    return false;
+  }
+}
+
 export function MapAsk({ nodes }: { nodes: CanopyNode[] }) {
-  const [key, setKey] = useState("");
+  const storeRef = useRef<ProviderSelectionStore | null>(null);
+  const [rows, setRows] = useState<DashboardRow[]>([]);
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
+  async function refresh(store: ProviderSelectionStore) {
+    const probe = await loadCanopyProbe(fetch, readPuterSignedIn());
+    setRows(await loadDashboard(store, probe));
+  }
+
   useEffect(() => {
-    setKey(localStorage.getItem(KEY_NAME) || "");
+    forgetBrowserProviderKeys(window.localStorage);
+    forgetBrowserProviderKeys(window.sessionStorage);
+    const store = createProviderSelectionStore(createLocalStorageStore());
+    storeRef.current = store;
+    let cancel = false;
+    void refresh(store).catch(() => {
+      if (!cancel) setRows([]);
+    });
+    return () => {
+      cancel = true;
+    };
   }, []);
 
-  function saveKey(value: string) {
-    setKey(value);
-    const trimmed = value.trim();
-    if (trimmed) localStorage.setItem(KEY_NAME, trimmed);
-    else localStorage.removeItem(KEY_NAME);
+  async function onSelect(id: AiProviderId) {
+    const store = storeRef.current;
+    if (!store) return;
+    await store.setProvider(id);
+    await refresh(store);
+  }
+
+  async function onModel(id: AiProviderId, model: string) {
+    const store = storeRef.current;
+    if (!store) return;
+    try {
+      await store.setModel(id, model);
+    } catch {
+      // The library rejects a key-shaped model. Refresh puts the saved model back.
+    }
+    await refresh(store);
   }
 
   async function onAsk(event: FormEvent) {
@@ -57,15 +101,21 @@ export function MapAsk({ nodes }: { nodes: CanopyNode[] }) {
     setError("");
     setAnswer("");
     try {
-      const router = createCanopyRouter({
-        apiKey: key,
-        loadPuter,
-        siteUrl: window.location.origin,
-      });
-      const text = await router.streamChat({
+      const selection = await storeRef.current?.getSelection();
+      const provider = selection?.provider ?? "puter";
+      const model = selection?.model || defaultModelFor(provider);
+      let streamed = "";
+      const text = await askCanopy({
+        provider,
+        model,
         message,
         systemPrompt: CANOPY_PROMPT,
         context: mapNotes(nodes),
+        loadPuter,
+        onChunk: (chunk: string) => {
+          streamed += chunk;
+          setAnswer(streamed);
+        },
       });
       setAnswer(text);
     } catch (err) {
@@ -78,20 +128,9 @@ export function MapAsk({ nodes }: { nodes: CanopyNode[] }) {
   return (
     <form onSubmit={onAsk} className="rounded-xl border border-line bg-panel p-4">
       <h2 className="font-display text-xl">Ask about this map</h2>
-      <p className="mt-1 text-xs leading-relaxed text-mute">
-        Puter runs first in this browser. An OpenRouter key saved here tries Space Bunny Alpha, then gpt-4o-mini. The key stays in this browser.
-      </p>
-      <label className="mt-3 block text-xs text-mute">
-        OpenRouter key, optional
-        <input
-          type="password"
-          className="mt-1 w-full rounded-md border border-line bg-ink px-3 py-2.5 text-sm text-paper"
-          value={key}
-          onChange={(event) => saveKey(event.target.value)}
-          placeholder="sk-or-..."
-          autoComplete="off"
-        />
-      </label>
+      <div className="mt-3">
+        <AiBufferDashboard rows={rows} onSelect={(id) => void onSelect(id)} onModel={(id, model) => void onModel(id, model)} />
+      </div>
       <label className="mt-3 block text-xs text-mute">
         Question
         <textarea
